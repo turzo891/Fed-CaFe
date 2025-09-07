@@ -1,7 +1,3 @@
-# run.py
-# One-shot scaffolder for the federated generative fairness project.
-# Usage: python run.py
-
 import os, stat, textwrap, json, pathlib
 
 ROOT = pathlib.Path("fedgen")
