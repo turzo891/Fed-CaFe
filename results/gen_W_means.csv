@@ -1,0 +1,2 @@
+model,split,algo,n,mean,stdev
+dcgan64,noniid,fedcafe,1,0.746094,0.0

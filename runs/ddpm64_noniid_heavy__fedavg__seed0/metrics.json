@@ -1,0 +1,13 @@
+{
+  "run_id": "ddpm64_noniid_heavy__fedavg__seed0",
+  "model": "ddpm64",
+  "task": "diffusion",
+  "split": "noniid",
+  "alpha": 0.2,
+  "algo": "fedavg",
+  "seed": 0,
+  "metrics": {
+    "Data_Wasserstein": null,
+    "Global_data_hist": null
+  }
+}

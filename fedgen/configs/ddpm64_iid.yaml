@@ -1,0 +1,19 @@
+model: ddpm64
+task: diffusion
+rounds: 50
+clients: 10
+clients_per_round: 5
+batch_size: 64
+local_epochs: 1
+split: iid
+dirichlet_alpha:
+algo: fedavg
+mu: 0.0
+lam_adv: 0.5
+lam_cf: 1.0
+lam_hid: 0.0
+lam_div: 0.1
+eta: 0.05
+tau: 0.0
+p_star: uniform
+seed: 0

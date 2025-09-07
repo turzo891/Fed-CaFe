@@ -1,0 +1,74 @@
+Run one job:
+CUDA_VISIBLE_DEVICES="" python3 fedgen/runner.py --config fedgen/configs/dcgan64_noniid_heavy.yaml --algo fedcafe --seed 0
+
+
+Run the full (now tiny) matrix:
+./fedgen/run_matrix.sh
+
+
+
+
+Inspect a run:
+jq '.' runs/dcgan64_noniid_heavy__fedcafe__seed0/metrics.json
+
+Build an aggregate CSV with the fairness number:
+python3 - <<'PY'
+import os, json, csv
+rows=[]
+for d,_,f in os.walk("runs"):
+    if "metrics.json" in f:
+        p=os.path.join(d,"metrics.json")
+        r=json.load(open(p))
+        rows.append({
+          "run_id": r["run_id"],
+          "model": r["model"],
+          "split": r["split"],
+          "algo":  r["algo"],
+          "seed":  r["seed"],
+          "Data_Wasserstein": (r.get("metrics") or {}).get("Data_Wasserstein"),
+          "Global_data_hist": (r.get("metrics") or {}).get("Global_data_hist"),
+        })
+os.makedirs("results", exist_ok=True)
+with open("results/agg.csv","w",newline="") as f:
+    w=csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+    w.writeheader(); w.writerows(rows)
+print("results/agg.csv")
+PY
+
+column -t -s, results/agg.csv | head
+
+
+
+
+Get means over seeds per (model,split,algo):
+python3 - <<'PY'
+import csv, statistics as st
+from collections import defaultdict
+g=defaultdict(list)
+with open("results/agg.csv") as f:
+    rd=csv.DictReader(f)
+    for r in rd:
+        k=(r["model"], r["split"], r["algo"])
+        v=r["Data_Wasserstein"]
+        if v not in ("", None): g[k].append(float(v))
+rows=[{"model":m,"split":s,"algo":a,"mean_Data_W":round(st.mean(v),6),"n":len(v)}
+      for (m,s,a),v in g.items()]
+rows.sort(key=lambda x:(x["model"],x["split"],x["algo"]))
+with open("results/means.csv","w",newline="") as f:
+    import csv; w=csv.DictWriter(f, fieldnames=rows[0].keys())
+    w.writeheader(); w.writerows(rows)
+print("results/means.csv")
+PY
+
+column -t -s, results/means.csv
+
+
+When ready to scale up
+for f in fedgen/configs/*.yaml; do
+  sed -i 's/^rounds: .*/rounds: 50/' "$f"
+  sed -i 's/^clients: .*/clients: 10/' "$f"
+  sed -i 's/^clients_per_round: .*/clients_per_round: 5/' "$f"
+  sed -i 's/^batch_size: .*/batch_size: 64/' "$f"
+done
+sed -i 's/num_samples=200/num_samples=1000/' fedgen/runner.py
+sed -i 's/batches >= 10/batches >= 100/' fedgen/runner.py

@@ -1,0 +1,18 @@
+{
+  "run_id": "dcgan64_iid__fedcafe__seed2",
+  "model": "dcgan64",
+  "task": "gan",
+  "split": "iid",
+  "alpha": null,
+  "algo": "fedcafe",
+  "seed": 2,
+  "metrics": {
+    "Data_Wasserstein": 0.017500000000000016,
+    "Global_data_hist": [
+      0.2575,
+      0.23374999999999999,
+      0.2575,
+      0.25125
+    ]
+  }
+}

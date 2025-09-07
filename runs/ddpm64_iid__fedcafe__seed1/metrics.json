@@ -1,0 +1,13 @@
+{
+  "run_id": "ddpm64_iid__fedcafe__seed1",
+  "model": "ddpm64",
+  "task": "diffusion",
+  "split": "iid",
+  "alpha": null,
+  "algo": "fedcafe",
+  "seed": 1,
+  "metrics": {
+    "Data_Wasserstein": null,
+    "Global_data_hist": null
+  }
+}

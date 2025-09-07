@@ -1,0 +1,165 @@
+# runner
+cat > fedgen/runner.py <<'PY'
+<paste the full runner.py from my last message here>
+PY
+
+# FedProx
+cat > fedgen/algos/fedprox.py <<'PY'
+import torch
+
+def prox_loss(params, global_params, mu: float):
+    if mu == 0.0:
+        return 0.0
+    reg = 0.0
+    for k, p in params.items():
+        if k in global_params and isinstance(p, torch.Tensor):
+            gp = global_params[k].to(p.device)
+            reg = reg + torch.sum((p - gp) ** 2)
+    return 0.5 * mu * reg
+PY
+
+# Fed-CaFe utils
+cat > fedgen/algos/fedcafe.py <<'PY'
+from itertools import accumulate
+import torch
+import torch.nn.functional as F
+
+def wasserstein_hist(p_hat, p_star):
+    c1 = list(accumulate(p_hat))
+    c2 = list(accumulate(p_star))
+    return sum(abs(x - y) for x, y in zip(c1, c2))
+
+def bias_aware_weights(P_hats, p_star, eps=1e-6):
+    W = [wasserstein_hist(p, p_star) for p in P_hats]
+    inv = [1.0 / (eps + w) for w in W]
+    s = sum(inv)
+    return [x / s for x in inv], W
+
+def perceptual_dist_l1(x, y, mask=None):
+    if mask is None:
+        return torch.mean(torch.abs(x - y))
+    return torch.mean(torch.abs((x - y) * mask))
+PY
+
+# DCGAN
+cat > fedgen/models/dcgan.py <<'PY'
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class GenBlock(nn.Module):
+    def __init__(self, in_ch, out_ch, k=4, s=2, p=1):
+        super().__init__()
+        self.deconv = nn.ConvTranspose2d(in_ch, out_ch, k, s, p, bias=False)
+        self.bn = nn.BatchNorm2d(out_ch)
+    def forward(self, x):
+        x = self.deconv(x)
+        x = self.bn(x)
+        return F.relu(x, inplace=True)
+
+class Generator64(nn.Module):
+    def __init__(self, z_dim=128, groups=4, emb_dim=16):
+        super().__init__()
+        self.groups = groups
+        self.emb = nn.Embedding(groups, emb_dim)
+        in_dim = z_dim + emb_dim
+        self.fc = nn.Linear(in_dim, 512*4*4)
+        self.g1 = GenBlock(512, 256)
+        self.g2 = GenBlock(256, 128)
+        self.g3 = GenBlock(128, 64)
+        self.out = nn.ConvTranspose2d(64, 3, 4, 2, 1)
+        nn.init.xavier_uniform_(self.out.weight)
+    def forward(self, z, y):
+        yemb = self.emb(y)
+        h = torch.cat([z, yemb], dim=1)
+        x = self.fc(h).view(-1, 512, 4, 4)
+        x = self.g1(x)
+        x = self.g2(x)
+        h_mid = self.g3(x)
+        img = torch.tanh(self.out(h_mid)) * 0.5 + 0.5
+        return img, h_mid
+
+class Discriminator64(nn.Module):
+    def __init__(self):
+        super().__init__()
+        def block(ic, oc, bn=True):
+            layers = [nn.Conv2d(ic, oc, 4, 2, 1), nn.LeakyReLU(0.2, inplace=True)]
+            if bn: layers.insert(1, nn.BatchNorm2d(oc))
+            return nn.Sequential(*layers)
+        self.d = nn.Sequential(
+            block(3, 64, bn=False),
+            block(64, 128),
+            block(128, 256),
+            block(256, 512),
+        )
+        self.out = nn.Conv2d(512, 1, 4, 1, 0)
+        nn.init.xavier_uniform_(self.out.weight)
+    def forward(self, x):
+        h = self.d(x)
+        logits = self.out(h).view(-1, 1)
+        return torch.sigmoid(logits)
+PY
+
+# Tiny diffusion UNet
+cat > fedgen/models/ddpm_unet.py <<'PY'
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class UNet64(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.e1 = nn.Conv2d(3, 32, 3, 1, 1)
+        self.e2 = nn.Conv2d(32, 64, 3, 2, 1)
+        self.e3 = nn.Conv2d(64, 64, 3, 2, 1)
+        self.b  = nn.Conv2d(64, 64, 3, 1, 1)
+        self.d1 = nn.ConvTranspose2d(64, 64, 4, 2, 1)
+        self.d2 = nn.ConvTranspose2d(64, 32, 4, 2, 1)
+        self.out = nn.Conv2d(32, 3, 3, 1, 1)
+        for m in [self.e1,self.e2,self.e3,self.b,self.d1,self.d2,self.out]:
+            if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
+                nn.init.kaiming_normal_(m.weight, nonlinearity='relu')
+    def forward(self, x):
+        x1 = F.relu(self.e1(x))
+        x2 = F.relu(self.e2(x1))
+        x3 = F.relu(self.e3(x2))
+        b  = F.relu(self.b(x3))
+        y  = F.relu(self.d1(b))
+        y  = F.relu(self.d2(y))
+        y  = self.out(y)
+        return y
+PY
+
+# Heads
+cat > fedgen/models/heads.py <<'PY'
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class RaceHead(nn.Module):
+    def __init__(self, classes=4):
+        super().__init__()
+        self.cnn = nn.Sequential(
+            nn.Conv2d(3, 32, 3, 2, 1), nn.ReLU(inplace=True),
+            nn.Conv2d(32, 64, 3, 2, 1), nn.ReLU(inplace=True),
+            nn.AdaptiveAvgPool2d(1),
+        )
+        self.fc = nn.Linear(64, classes)
+        nn.init.xavier_uniform_(self.fc.weight)
+    def forward(self, x):
+        h = self.cnn(x).view(x.size(0), -1)
+        return self.fc(h)
+
+class ProbeA(nn.Module):
+    def __init__(self, in_ch=64, classes=4):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Conv2d(in_ch, 64, 3, 1, 1), nn.ReLU(inplace=True),
+            nn.AdaptiveAvgPool2d(1),
+        )
+        self.fc = nn.Linear(64, classes)
+        nn.init.xavier_uniform_(self.fc.weight)
+    def forward(self, h_mid):
+        h = self.net(h_mid).view(h_mid.size(0), -1)
+        return self.fc(h)
+PY

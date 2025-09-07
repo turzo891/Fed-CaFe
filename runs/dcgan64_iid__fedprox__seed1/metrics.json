@@ -1,0 +1,18 @@
+{
+  "run_id": "dcgan64_iid__fedprox__seed1",
+  "model": "dcgan64",
+  "task": "gan",
+  "split": "iid",
+  "alpha": null,
+  "algo": "fedprox",
+  "seed": 1,
+  "metrics": {
+    "Data_Wasserstein": 0.02250000000000002,
+    "Global_data_hist": [
+      0.25000000000000006,
+      0.24500000000000002,
+      0.23750000000000002,
+      0.2675
+    ]
+  }
+}

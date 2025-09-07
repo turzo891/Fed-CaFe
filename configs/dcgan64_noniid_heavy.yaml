@@ -1,0 +1,19 @@
+model: dcgan64
+task: gan
+rounds: 50
+clients: 10
+clients_per_round: 5
+batch_size: 64
+local_epochs: 1
+split: noniid
+dirichlet_alpha: 0.2   # heavy skew
+algo: fedcafe           # fedavg | fedprox | fedcafe
+mu: 0.0                 # used if fedprox
+lam_adv: 0.5
+lam_cf: 1.0
+lam_hid: 0.2
+lam_div: 0.1
+eta: 0.05
+tau: 0.0
+p_star: uniform         # target race distribution
+seed: 0

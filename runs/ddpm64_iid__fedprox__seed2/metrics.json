@@ -1,0 +1,13 @@
+{
+  "run_id": "ddpm64_iid__fedprox__seed2",
+  "model": "ddpm64",
+  "task": "diffusion",
+  "split": "iid",
+  "alpha": null,
+  "algo": "fedprox",
+  "seed": 2,
+  "metrics": {
+    "Data_Wasserstein": null,
+    "Global_data_hist": null
+  }
+}

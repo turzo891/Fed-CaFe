@@ -1,0 +1,7 @@
+model,split,algo,n,mean,stdev
+dcgan64,iid,fedavg,3,0.028333,0.011961
+dcgan64,iid,fedcafe,3,0.028333,0.011961
+dcgan64,iid,fedprox,3,0.028333,0.011961
+dcgan64,noniid,fedavg,6,0.42,0.095811
+dcgan64,noniid,fedcafe,6,0.42,0.095811
+dcgan64,noniid,fedprox,6,0.42,0.095811

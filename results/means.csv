@@ -1,0 +1,7 @@
+model,split,algo,mean_Data_W,n
+dcgan64,iid,fedavg,0.028333,3
+dcgan64,iid,fedcafe,0.028333,3
+dcgan64,iid,fedprox,0.028333,3
+dcgan64,noniid,fedavg,0.42,6
+dcgan64,noniid,fedcafe,0.42,6
+dcgan64,noniid,fedprox,0.42,6

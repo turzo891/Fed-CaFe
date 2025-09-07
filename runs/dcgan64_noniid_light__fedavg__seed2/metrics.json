@@ -1,0 +1,18 @@
+{
+  "run_id": "dcgan64_noniid_light__fedavg__seed2",
+  "model": "dcgan64",
+  "task": "gan",
+  "split": "noniid",
+  "alpha": 0.5,
+  "algo": "fedavg",
+  "seed": 2,
+  "metrics": {
+    "Data_Wasserstein": 0.41875,
+    "Global_data_hist": [
+      0.28625,
+      0.04875,
+      0.1975,
+      0.4675
+    ]
+  }
+}
