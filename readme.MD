@@ -191,3 +191,10 @@ GNU
 
 ```
 ```
+ 
+ ## TO Enable GPU
+
+ pip install --index-url https://download.pytorch.org/whl/cu124 torch==2.6.0 torchvision==0.21.0
+
+ # To Check GPU
+python -c "import torch; print('cuda?', torch.cuda.is_available()); print('gpus:', torch.cuda.device_count()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'no cuda')"
