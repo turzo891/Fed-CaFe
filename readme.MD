@@ -187,9 +187,8 @@ If you compare against FedProx, please cite the original paper by **Li et al., 2
 ---
 
 ## License
-GNU
-
 ```
+GNU
 ```
  
  ## TO Enable GPU
